@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graphing Calculator</title>
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Graphing Calculator</h1>
+        <input type="text" id="inputEquation" placeholder="Enter your equation here">
+        <button id="tokenizeButton">Tokenize</button>
+        
+        <div class="equation-display">
+            <div style="display: flex; align-items: center;">
+                <div id="leftSide" class="equation-side styled-equation-side">
+                    <h2>Left Side</h2>
+                    <div id="leftChunks" class="chunks"></div>
+                </div>
+                <div class="equals-sign" style="margin: 0 10px; display: flex; justify-content: center; align-items: center;">=</div>
+                <div id="rightSide" class="equation-side styled-equation-side">
+                    <h2>Right Side</h2>
+                    <div id="rightChunks" class="chunks"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="operations">
+            <button id="addButton">Add</button>
+            <button id="subtractButton">Subtract</button>
+            <button id="multiplyButton">Multiply</button>
+            <button id="divideButton">Divide</button>
+            <input type="text" id="operationInput" placeholder="OperationValue">
+        </div>
+        
+        <div class="variable-substitution">
+            <h2>Variable Substitution</h2>
+            <input type="text" id="variableInput" placeholder="Variable name">
+            <button id="substituteButton">Substitute</button>
+        </div>
+    </div>
+    
+    <script src="scripts/app.js"></script>    
+    <script src="scripts/touchEvents.js"></script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 20px;
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+}
+
+#input-container {
+    margin-bottom: 20px;
+}
+
+input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+#tokenized-chunks {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 20px 0;
+}
+
+.chunk {
+    background-color: #007bff;
+    color: white;
+    padding: 10px;
+    margin: 5px;
+    border-radius: 4px;
+    cursor: move;
+    user-select: none;
+}
+
+#equals-sign {
+    font-size: 24px;
+    margin: 0 10px;
+}
+
+#result-container {
+    margin-top: 20px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+button {
+    padding: 10px 15px;
+    font-size: 16px;
+    margin: 5px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #0056b3;
+    color: white;
+}
+
+.mode-selector {
+    margin-bottom: 20px;
+}
+
+.mode-selector label {
+    margin-right: 10px;
+}
+/* Add your styles here */
+
+.styled-equation-side {
+    margin-left: 10px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.operations button {
+    background-color: lightblue;
+    border: 1px solid black;
+    padding: 10px;
+    margin: 5px;
+    cursor: pointer;
+}
