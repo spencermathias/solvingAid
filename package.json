@@ -4,7 +4,8 @@
   "description": "A basic website for tokenizing mathematical equations and performing operations.",
   "main": "src/scripts/app.js",
   "scripts": {
-    "start": "live-server src"
+    "start": "live-server src",
+    "test": "mocha src/scripts/**/*.test.js"
   },
   "keywords": [
     "math",
@@ -16,5 +17,8 @@
   "license": "MIT",
   "dependencies": {
     "live-server": "^1.2.1"
+  },
+  "devDependencies": {
+    "mocha": "^11.7.5"
   }
 }

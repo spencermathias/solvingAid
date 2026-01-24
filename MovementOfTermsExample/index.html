@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equation Solver</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="console">
+        <div id="SystemActions">
+            <button onclick="createEquation()">create new equation</button>
+            <button onclick="saveEquationState()">save equation state as new equation</button>
+        </div>
+        <div id="equation">
+            <span class="term" draggable="true">5apples</span> + 
+            <span class="term" draggable="true">10apples</span> = 
+            <span class="term" draggable="true">-15</span> + 
+            <span class="term" draggable="true">20apples</span>
+        </div>
+        <div id="actions">
+            <button onclick="addBothSides()">Add term to Both Sides</button>
+            <button onclick="flipEquation()">Flip</button>
+            <button onclick="divideEquation()">Divide</button>
+        </div>
+        <div id="history">
+            <div class="action"></div>
+            <div class="leftSide"></div>
+            <div class="equalsSign"></div>
+            <div class="rightSide"></div>
+        </div>
+    </div>
+    <script src="equation.js"></script>
+    <script src="systemOfEqn.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "equation-solver",
+  "version": "1.0.0",
+  "description": "Integration tests for equation solver user interactions",
+  "main": "script.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "jsdom": "^22.0.0"
+  }
+}

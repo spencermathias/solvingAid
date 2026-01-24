@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Egg Dyeing Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Egg Dyeing Game</h1>
+    <p>Drag the white eggs into the dye vats to color them. Then, place them on the turntables to rotate them.</p>
+
+    <div class="game-container">
+        <!-- Draggable Eggs -->
+        <div class="eggs-tray">
+            <div class="egg" draggable="true"></div>
+            <div class="egg" draggable="true"></div>
+            <div class="egg" draggable="true"></div>
+        </div>
+
+        <!-- Dye Vats and Boxes -->
+        <div class="workstation">
+            <div class="dye-box">
+                <div class="label">Top Side</div>
+                <div class="vat red"></div>
+                <div class="vat blue"></div>
+            </div>
+            <div class="dye-box">
+                <div class="label">Bottom Side</div>
+                <div class="vat yellow"></div>
+                <div class="vat green"></div>
+            </div>
+            <div class="dye-box">
+                <div class="label">Left Side</div>
+                <div class="vat orange"></div>
+                <div class="vat purple"></div>
+            </div>
+            <div class="dye-box">
+                <div class="label">Right Side</div>
+                <div class="vat black"></div>
+                <div class="vat cyan"></div>
+            </div>
+        </div>
+
+        <!-- Turntables -->
+        <div class="turntable-mat">
+            <div class="turntable degrees-45">45°</div>
+            <div class="turntable degrees-30">30°</div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
