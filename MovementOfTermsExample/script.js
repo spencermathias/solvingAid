@@ -5,7 +5,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const equalsSignElement = document.getElementById("equalsSign");
     const rightSideElement = document.getElementById("rightSide");
     const historyElement = document.getElementById("history");
-    const initialEquation = [[[5,"apples"], [10,"apples"]], [[-15, "dollars"], [20, "apples"]]];
+    const initialEquation = [{type:"addGroup", sign:"+", coefficient:1, terms:[{type:"valueElement", sign:"+", numericValue:5, var_unit:"apples"}, 
+                                                                {type:"addGroup", sign:"+", coefficient:2, terms:[{type:"valueElement", sign:"+", numericValue:14, var_unit:"apples"},
+                                                                                                   {type:"valueElement", sign:"+", numericValue:15, var_unit:"apples"}
+                                                                                                  ]},
+                                                                ]},
+                             {type:"addGroup", sign:"+", coefficient:1, terms:[{type:"valueElement", sign:"+", numericValue:10, var_unit:"dollars"}, 
+                                                                {type:"valueElement", sign:"+", numericValue:20, var_unit:"apples"}
+                                                                ]}
+                            ];
     const equationList = new SystemOfEquations();
     window.testEquationList = equationList;
     equationList.createEquation(new Equation(initialEquation));
@@ -40,7 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let draggedTerm = null;
 
     function handleDragStart(event) {
-        draggedTerm = event.target.dataset.term;//event.target.textContent.trim(); // Trim spaces from the term
+        draggedTerm = parseInt(event.target.dataset.term);//event.target.textContent.trim(); // Trim spaces from the term
         event.dataTransfer.setData("text/plain", draggedTerm);
     }
 
@@ -52,18 +60,33 @@ document.addEventListener("DOMContentLoaded", () => {
         event.preventDefault();
         const dropTarget = event.target;
         if(solver.isSameEquation(draggedTerm)){
-            if (dropTarget.classList.contains("dropZone")) {
-                const fromIndex = draggedTerm;
-                const toIndex = dropTarget.dataset.term;
-                solver.moveTerm(fromIndex, toIndex);
-                updateEquation("Moved Term","moveTerm",[fromIndex, toIndex]);
-            }
-
-            if (dropTarget.classList.contains("term")) {
-                const fromIndex = draggedTerm;
-                const toIndex = dropTarget.dataset.term;
-                solver.combineTerms(fromIndex, toIndex);
-                updateEquation("combined Terms","combineTerms",[fromIndex, toIndex]);
+            const toIndex = parseInt(dropTarget.dataset.term);
+            if (NODE_REGISTRY.get(draggedTerm).type === "coefficient"){
+                let fromIndex;
+                let toIndexParsed;
+                if(dropTarget.classList.contains("dropZone")){
+                    fromIndex = NODE_REGISTRY.get(draggedTerm).parent.id;
+                    toIndexParsed = parseInt(dropTarget.dataset.term.split(':')[0]);
+                }else if(dropTarget.classList.contains("term")){
+                    fromIndex = draggedTerm;
+                    toIndexParsed = NODE_REGISTRY.get(parseInt(dropTarget.dataset.term)).parent.id;
+                }
+                NODE_REGISTRY.get(toIndexParsed).distribute(NODE_REGISTRY.get(draggedTerm), 'multiply');
+                updateEquation("distribute","distribute",[fromIndex, parseInt(toIndexParsed)]);
+            }else{
+                if (dropTarget.classList.contains("dropZone")) {
+                    const fromIndex = draggedTerm;
+                    const toIndex = dropTarget.dataset.term;
+                    NODE_REGISTRY.get(parseInt(toIndex.split(':')[0])).moveTerm(fromIndex, parseInt(toIndex.split(':')[1]));
+                    updateEquation("Moved Term","moveTerm",[fromIndex, toIndex]);
+                }
+                
+                if (dropTarget.classList.contains("term")) {
+                    const fromIndex = draggedTerm;
+                    const toIndexParsed = parseInt(dropTarget.dataset.term);
+                    NODE_REGISTRY.get(toIndexParsed).parent.combineTerms(fromIndex, toIndexParsed);
+                    updateEquation("combined Terms","combineTerms",[fromIndex, toIndexParsed]);
+                }
             }
         }else{
             if (dropTarget.classList.contains("equalitySign")) {
