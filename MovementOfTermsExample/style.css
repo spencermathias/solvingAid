@@ -3,14 +3,34 @@ body {
     margin: 0;
     padding: 0;
     display: flex;
-    justify-content: center;
+    flex-direction: column; /* Stack savedEquations and console vertically */
     align-items: center;
     height: 100vh;
     background-color: #eaeaea; /* Updated background color for better contrast */
 }
 
+#savedEquations {
+    width: 100%; /* Span the full width of the page */
+    max-height: 150px; /* Limit height to prevent overlap */
+    overflow-y: auto; /* Add scroll bar if content overflows */
+    background-color: #f9f9f9; /* Light background for contrast */
+    border-bottom: 2px solid #ccc; /* Dividing line */
+    padding: 10px;
+    box-sizing: border-box; /* Include padding in width/height calculations */
+}
+
 #console {
-    background: #333; /* Darker background for console */
+    flex: 1; /* Allow the console to take remaining space */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%; /* Ensure the console spans the full width */
+    margin-top: 10px;
+}
+
+#consoleContent {
+    background: #333; /* Darker background for console content */
     color: #fff;
     padding: 20px;
     border-radius: 10px; /* Rounded corners */
@@ -48,6 +68,22 @@ body {
     background-color: #777; /* Lighter hover effect */
 }
 
+#SystemActions button {
+    margin: 5px;
+    padding: 10px 20px; /* Increased padding for better clickability */
+    font-size: 1em;
+    border: none;
+    border-radius: 5px; /* Rounded buttons */
+    cursor: pointer;
+    background-color: #555; /* Neutral button color */
+    color: #fff;
+    transition: background-color 0.3s ease;
+}
+
+#SystemActions button:hover {
+    background-color: #777; /* Lighter hover effect */
+}
+
 #history {
     margin-top: 20px;
     font-size: 0.9em;
@@ -57,4 +93,12 @@ body {
     padding: 10px;
     background: #222; /* Darker background for history */
     border-radius: 5px;
+}
+
+#savedEquations .equationBlock {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #fff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }

@@ -383,9 +383,13 @@ class addGroup extends ASTNode {
     }
 
     toJSON() {
-        return this.terms.map(term => {
-            return {sign: term.sign, value: term.value.toJSON()};
-        });
+        return {type: "addGroup", sign:"+", coefficient:this.terms[0].value.numericValue, terms: this.terms.map((term, index) => {
+            if(index === 0){
+                return null; // skip coefficient in terms array
+            }
+            return term.value.toJSON();
+        })};
+        
     }
 
 }
@@ -549,7 +553,7 @@ class Equation extends ASTNode {
 
     getSavedEquation(forJson=false) {
         if(forJson) {
-            return JSON.stringify([this.terms[0].map(term => term.toJSON()), this.terms[1].map(term => term.toJSON()), this.equality]);
+            return JSON.stringify([this.terms[0].toJSON(), this.terms[1].toJSON(), this.equality]);
         }
         return [[...this.terms[0]], [...this.terms[1]], this.equality];
     }

@@ -6,11 +6,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const rightSideElement = document.getElementById("rightSide");
     const historyElement = document.getElementById("history");
     const initialEquation = [{type:"addGroup", sign:"+", coefficient:1, terms:[{type:"valueElement", sign:"+", numericValue:5, var_unit:"apples"}, 
-                                                                {type:"addGroup", sign:"+", coefficient:2, terms:[{type:"valueElement", sign:"+", numericValue:14, var_unit:"apples"},
+                                                                {type:"addGroup", sign:"+", coefficient:2, terms:[{type:"valueElement", sign:"+", numericValue:10, var_unit:"apples"},
                                                                                                    {type:"valueElement", sign:"+", numericValue:15, var_unit:"apples"}
                                                                                                   ]},
                                                                 ]},
-                             {type:"addGroup", sign:"+", coefficient:1, terms:[{type:"valueElement", sign:"+", numericValue:10, var_unit:"dollars"}, 
+                             {type:"addGroup", sign:"+", coefficient:1, terms:[{type:"valueElement", sign:"+", numericValue:14, var_unit:"dollars"}, 
                                                                 {type:"valueElement", sign:"+", numericValue:20, var_unit:"apples"}
                                                                 ]}
                             ];
@@ -112,7 +112,14 @@ document.addEventListener("DOMContentLoaded", () => {
     window.saveEquationState = function () {
         const clonedEqNumber = equationList.cloneActiveEquation();
         solver = equationList.getActiveEquation();
-        updateEquation("Cloned Equation to eq:"+clonedEqNumber,"systemLevel",[]);
+        updateEquation("Cloned Equation to eq:" + clonedEqNumber, "systemLevel", []);
+
+        // Display the saved equation in the savedEquations section
+        const savedEquationsContainer = document.getElementById("savedEquations");
+        const equationBlock = document.createElement("div");
+        equationBlock.className = "equationBlock";
+        equationBlock.textContent = solver.toString();
+        savedEquationsContainer.appendChild(equationBlock);
     };
 
     window.flipEquation = function () {
