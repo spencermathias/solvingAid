@@ -5,7 +5,7 @@ const app = express();
 const PORT = 8081;
 
 // Serve static files from the MovementOfTermsExample directory
-const staticPath = path.join(__dirname, 'MovementOfTermsExample');
+const staticPath = path.join(__dirname, 'docs') //'MovementOfTermsExample');
 app.use(express.static(staticPath));
 
 // Start the server
