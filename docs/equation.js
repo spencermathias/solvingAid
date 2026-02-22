@@ -257,7 +257,7 @@ class addGroup extends ASTNode {
                     this.terms[insertIndex].value.parentChildIndex = insertIndex;
                 }
                 this.reNumberChildren();
-                if(this.terms.length === 2){ // TODO change to 1 when the coefficient is removed from addGroup
+                if(this.terms.length === 2 && this.terms[0].numericValue === 1){ // TODO change to 1 when the coefficient is removed from addGroup
                     // If only one term remains, update its parent to be the current node's parent
                     this.terms[1].value.parent = this.parent;
                     this.terms[1].value.parentChildIndex = this.parentChildIndex;
