@@ -5,14 +5,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const equalsSignElement = document.getElementById("equalsSign");
     const rightSideElement = document.getElementById("rightSide");
     const historyElement = document.getElementById("history");
-    const initialEquation = [{type:"addGroup", sign:"+", coefficient:1, terms:[{type:"valueElement", sign:"+", numericValue:5, var_unit:"apples"}, 
-                                                                {type:"addGroup", sign:"+", coefficient:2, terms:[{type:"valueElement", sign:"+", numericValue:10, var_unit:"apples"},
-                                                                                                   {type:"valueElement", sign:"+", numericValue:15, var_unit:"apples"}
-                                                                                                  ]},
-                                                                ]},
-                             {type:"addGroup", sign:"+", coefficient:1, terms:[{type:"valueElement", sign:"+", numericValue:14, var_unit:"dollars"}, 
-                                                                {type:"valueElement", sign:"+", numericValue:20, var_unit:"apples"}
-                                                                ]}
+    const initialEquation = [{type:"addGroup", terms:[  {type:"valueElement", numericValue:5, var_unit:"apples"}, 
+                                                        {type:"multiplyGroup", terms:[  {type:"valueElement", numericValue:2, var_unit:"_numeric"},
+                                                                                        {type:"addGroup", terms:[
+                                                                                                    {type:"valueElement", numericValue:10, var_unit:"apples"},
+                                                                                                    {type:"valueElement", numericValue:15, var_unit:"apples"}
+                                                                                                ], signs:["+", "+"]
+                                                                                        }]
+                                                        }], signs:["+", "+"]},
+                             {type:"addGroup", terms:[{type:"valueElement", numericValue:14, var_unit:"dollars"}, 
+                                                      {type:"valueElement", numericValue:20, var_unit:"apples"}
+                                                     ], signs:["+", "+"]}
                             ];
     const equationList = new SystemOfEquations();
     window.testEquationList = equationList;

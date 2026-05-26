@@ -58,8 +58,14 @@ class valueElement  extends ASTNode {
         return new valueElement(this.numericValue - other.numericValue, this.var_unit);
     }
     multiply(other) {
+        if (typeof other === 'number') {
+            other = new valueElement(other, '_numeric');
+        }
+        if (other instanceof multiplyGroup || other instanceof addGroup) {
+            return new multiplyGroup([this, other]);
+        }
         if(other.var_unit !== '_numeric') {
-            throw new Error('Cannot divide by a valueElement with a var_unit');
+            return new multiplyGroup([this, other]);
         }
         return new valueElement(this.numericValue * other.numericValue, this.var_unit);
     }
@@ -116,57 +122,19 @@ termSplitEnum = {
     side: 1,
     equation: 0
 };
-class coefficientElement extends ASTNode {
-    constructor(numericValue = 1, parent = null, parentChildIndex = null) {
-        if (typeof numericValue !== 'number') {
-            alert('' + numericValue + ' must be a number');
-            throw new Error('numericValue must be a number');
-        }
-        super(parent, parentChildIndex);
-        this.numericValue = numericValue;
-        this.var_unit = '_numeric';
-        this.type = 'coefficient';
-    }
-
-    divide(divisor) {
-        if(divisor === 0) {
-            alert('Cannot divide by zero');
-            throw new Error('Cannot divide by zero');
-        }
-        this.numericValue = this.numericValue / divisor;
-        return this;
-    }
-    
-    toString() {
-        return `${this.numericValue}`;
-    }
-
-    toDraggable() {
-        return `<span class="coefficient" draggable="true" data-term="${this.id}">${this.numericValue}</span>`;
-    }
-
-    toJSON() {
-        return [this.numericValue];
-    }
-}
 
 class addGroup extends ASTNode {
-    constructor(terms = [], parent = null, parentChildIndex = null) {
+    constructor(terms = [], signs = [], parent = null, parentChildIndex = null) {
         super(parent, parentChildIndex);
         this.terms = [];
-        this.terms.push({sign:"+", value: new coefficientElement(terms.coefficient, this, 0)});
-        this.terms.push(... terms.terms.map(term => {
-            if (term.type == 'valueElement') {
-                return {sign:term.sign, value: new valueElement(term.numericValue, term.var_unit, this)};
-            }else{
-                return {sign:term.sign, value: new addGroup(term, this)};
-            }
+        this.terms.push(...terms.map((term, index) => {
+            const sign = signs[index] || term.sign || '+';
+            return { sign, value: createNodeFromJSON(term, this, index) };
         }));
         this.type = 'addGroup';
         this.reNumberChildren();
         this.parent = parent;
         this.parentChildIndex = parentChildIndex;
-        //this.coefficient = 1;
     }
 
     InsertAtIndex(term, index = this.terms.length) {
@@ -247,7 +215,7 @@ class addGroup extends ASTNode {
                 }
                 term.value.numericValue *= (term.sign === this.terms[insertIndex].sign ? 1 : -1);
                 this.terms[insertIndex].value = this.terms[insertIndex].value.add(term.value);
-                
+
                 if(this.terms[insertIndex].value.numericValue === 0) {
                     // Remove term if it sums to zero
                     this.terms.splice(insertIndex, 1);
@@ -257,15 +225,15 @@ class addGroup extends ASTNode {
                     this.terms[insertIndex].value.parentChildIndex = insertIndex;
                 }
                 this.reNumberChildren();
-                if(this.terms.length === 2 && this.terms[0].numericValue === 1){ // TODO change to 1 when the coefficient is removed from addGroup
+                if(this.terms.length === 1 && this.terms[0].numericValue === 1){ 
                     // If only one term remains, update its parent to be the current node's parent
-                    this.terms[1].value.parent = this.parent;
-                    this.terms[1].value.parentChildIndex = this.parentChildIndex;
+                    this.terms[0].value.parent = this.parent;
+                    this.terms[0].value.parentChildIndex = this.parentChildIndex;
                     // remove this node from parent
                     if(this.parent.type === 'addGroup'){
-                        this.parent.terms[this.parentChildIndex] = this.terms[1];// TODO change to 0 when the coefficient is removed from addGroup
+                        this.parent.terms[this.parentChildIndex] = this.terms[0];
                     }else{
-                        this.parent.terms[this.parentChildIndex] = this.terms[1].value;// TODO change to 0 when the coefficient is removed from addGroup
+                        this.parent.terms[this.parentChildIndex] = this.terms[0].value;
                     }
                     // remove this node from registry
                     //NODE_REGISTRY.delete(this.id);
@@ -285,34 +253,18 @@ class addGroup extends ASTNode {
         });
     }
 
-    distribute(value) {
+    distribute(operation,value) {
         this.terms = this.terms.map((term, index) => {
-            if(term.value.type === 'coefficient'){
-                // skip auto distribute divisor to add group terms
-                return {sign: term.sign, value: new coefficientElement(1, this, index)};
-            } else{
-                if(this.parent.type !== 'equation'){
-                    const termValue = term.value.multiply(value);
-                    termValue.parent = this.parent;
-                    this.parent.InsertAtIndex({sign: term.sign, value: termValue}, this.parentChildIndex + index);
-                    return {sign: term.sign, value: new valueElement(0, term.value.var_unit)};
-                }else{
-                    const termValue = term.value.divide(value);
-                    termValue.parent = this;
-                    return {sign: term.sign, value: termValue};
-                }
-            }
+            const termValue = term.value[operation](value);
+            termValue.parent = this;
+            return {sign: term.sign, value: termValue};
         });
-        if(this.parent.type !== 'equation'){
-            this.parent.terms.splice(this.parentChildIndex, 1); // remove the addGroup node after distribution
-            this.parent.reNumberChildren();
-        }
-        return this.toString();
+        return this;
     }
 
     divide(divisor) {
         if(this.parent.type === 'equation'){
-            this.distribute(divisor, 'divide');
+            this.distribute('divide', divisor);
             return this;
         } else{
             this.terms[0].value.divide(divisor);
@@ -321,10 +273,19 @@ class addGroup extends ASTNode {
     }
     
     multiply(factor) {
-        this.terms = this.terms.map(term => {
-            return {sign: term.sign, value: term.value.multiply(factor)};
-        });
-        return this.toString();
+        if (typeof factor === 'number') {
+            factor = new valueElement(factor, '_numeric');
+        }
+        if (factor instanceof valueElement ) {
+            this.terms = this.terms.map(term => {
+                return {sign: term.sign, value: term.value.multiply(factor)};
+            });
+            return this.toString();
+        }
+        if (factor instanceof multiplyGroup) {
+            return new multiplyGroup([this, ...factor.factors]);
+        }
+        return new multiplyGroup([this, factor]);
     }
 
     toString() {
@@ -333,23 +294,14 @@ class addGroup extends ASTNode {
             return '0';
         }
         this.terms.forEach((term, index) => {
-            if(index === 0){    
-                if( term.value.numericValue !== 1){
-                    outString += term.value.toString() + '*(';
-                }
-            }else{
-                let appendTerm = term.value.toString();
-                if (index > 1 ) {
-                    outString += ' '+ term.sign + ' ';
-                } else if (term.sign == "-") {
-                    outString += ''+term.sign + ' ';
-                }
-                outString += appendTerm;
+            let appendTerm = term.value.toString();
+            if (index > 0 && term.sign == "+") {
+                outString += ' '+ term.sign + ' ';
+            } else if (term.sign == "-") {
+                outString += ''+term.sign + ' ';
             }
+            outString += appendTerm;
         });
-        if(this.terms[0].value.numericValue !== 1){
-            outString += ')';
-        }
         return outString;
     }
     
@@ -360,38 +312,236 @@ class addGroup extends ASTNode {
         }
         
         this.terms.forEach((term, index) => {
-            if(index === 0){
-                if(this.terms[0].value.numericValue !== 1){
-                    outString += `<span class="coefficient" draggable="true" data-term="${term.value.id}">${term.value.numericValue}</span>*(`;
-                }
-            }else{
-                let appendTerm = term.value.toDraggable();
-                outString += `<span class="dropZone" draggable="false" data-term="${this.id}:${index}"> . </span>`;
-                if (index > 1 && term.sign == "+") {
-                    outString += '+ ';
-                } else if (term.sign == "-") {
-                    outString += '- ';
-                }
-                outString += `<span class="term" draggable="true" data-term="${term.value.id}">${appendTerm}</span>`;
+            let appendTerm = term.value.toDraggable();
+            outString += `<span class="dropZone" draggable="false" data-term="${this.id}:${index}"> . </span>`;
+            if (index > 0 && term.sign == "+") {
+                outString += '+ ';
+            } else if (term.sign == "-") {
+                outString += '- ';
             }
+            outString += `<span class="term" draggable="true" data-term="${term.value.id}">${appendTerm}</span>`;
         });
         outString += `<span class="dropZone" draggable="false" data-term="${this.id}:${this.terms.length}"> . </span>`;
-        if(this.terms[0].value.numericValue !== 1){
-            outString += ')';
-        }
         return outString;
     }
 
     toJSON() {
-        return {type: "addGroup", sign:"+", coefficient:this.terms[0].value.numericValue, terms: this.terms.map((term, index) => {
-            if(index === 0){
-                return null; // skip coefficient in terms array
-            }
-            return term.value.toJSON();
-        })};
-        
+        return {
+            type: "addGroup",
+            terms: this.terms.map(term => term.value.toJSON()),
+            signs: this.terms.map(term => term.sign)
+        };
     }
 
+}
+
+class multiplyGroup extends ASTNode {
+    constructor(factors = [], parent = null, parentChildIndex = null) {
+        super(parent, parentChildIndex);
+        this.terms = factors.map(factor => createNodeFromJSON(factor, this, null));
+        this.type = 'multiplyGroup';
+        this.reNumberChildren();
+    }
+
+    normalizeFactor(factor) {
+        let validType = false;
+        if (typeof factor === 'number') {
+            factor = new valueElement(factor, '_numeric');
+            validType = true;
+        }else if (factor.type === 'valueElement' ) {
+            factor = new valueElement(factor.numericValue, '_numeric')
+            validType = true;
+        }else if (factor.type === 'addGroup' ){
+            factor = new addGroup(factor);
+            validType = true;
+        }else if (factor.type === 'multiplyGroup' ){
+            factor = new multiplyGroup(factor);
+            validType = true;
+        }
+
+        if (validType){
+            factor.parent = this;
+            return factor;
+        }else{
+            throw new Error('Invalid multiplyGroup factor: ' + factor);
+        }
+    }
+    
+    InsertAtIndex(term, index = this.terms.length) {
+        this.terms.splice(index, 0, term);
+        this.reNumberChildren();
+    }
+
+    //drag and drop operations
+    moveTerm(fromIndex, toBeforeIndex) {;
+        const fromSide = NODE_REGISTRY.get(fromIndex).parent.id;
+
+        if(fromSide !== this.id){
+            if(this.parent.type === 'equation'){
+                alert('Cannot move terms between sides of the equation, divide or multiply from both sides instead');
+                throw new Error('Cannot move terms between sides of the equation, divide or multiply from both sides instead');
+            //     // Moving between sides
+            //     if(this.parent.movePossible('multiply', toBeforeIndex)){
+            //         const term = this.terms[fromSide].splice(NODE_REGISTRY.get(fromIndex).parentChildIndex, 1)[0];
+            //         this.parent.moveTerm(term, toBeforeIndex);
+            //     }
+            } else{
+                alert('Cannot move terms, not part of same multiply group');
+                throw new Error('Cannot move terms, not part of same multiply group');
+            }
+        }else{
+            // Remove term from the original side
+            const termIndex = NODE_REGISTRY.get(fromIndex).parentChildIndex;
+            const term = this.terms.splice(termIndex, 1)[0];
+            
+            let insertIndex = toBeforeIndex;
+            
+            if(termIndex < insertIndex){ 
+                // Adjust index if removing from earlier in the array
+                insertIndex -= 1;
+            }
+            // Moving within the same side;
+            this.terms.splice(insertIndex, 0, term);
+        
+            this.reNumberChildren();
+            // Ensure consistent spacing around terms
+            return this.toString();
+        }
+    }
+
+    combineTerms(fromIndex, toIndex) {
+        const fromSide = NODE_REGISTRY.get(fromIndex).parent.id;
+
+        if(fromSide !== this.id){
+            if(this.parent.type === 'equation'){
+                alert('Cannot move terms between sides of the equation, multiply or divide from both sides instead');
+                throw new Error('Cannot move terms between sides of the equation, multiply or divide from both sides instead');
+            //     // Moving between sides
+            // {
+            //     this.terms[toSide][insertIndex] = this.terms[toSide][insertIndex].subtract(term);
+            // }
+            } else{
+                alert('Cannot move terms, not part of same multiply group');
+                throw new Error('Cannot move terms, not part of same multiply group');
+            }
+        }else{
+            if(fromIndex === toIndex ){
+                // No operation needed if combining the same term
+                throw new Error('Cannot combine term on top of itself');
+            }
+
+            // Remove term from the original side
+            const termIndex = NODE_REGISTRY.get(fromIndex).parentChildIndex;
+            let insertIndex = NODE_REGISTRY.get(toIndex).parentChildIndex;
+            const savedEquation = this.toJSON(); // save current state in case of error
+            try {
+                const term = this.terms.splice(termIndex, 1).pop();
+                
+                if(termIndex < insertIndex){ 
+                    // Adjust index if removing from earlier in the array
+                    insertIndex -= 1;
+                }
+                
+                if(this.terms[insertIndex].type === 'addGroup' && term.type === 'valueElement'){
+                    this.terms[insertIndex] = this.terms[insertIndex].distribute('multiply', term);
+                }
+                
+                if(this.terms[insertIndex].numericValue === 1) {
+                    // Remove term if it multiplies to one
+                    this.terms.splice(insertIndex, 1);
+                }else{
+                    // Update parent reference
+                    this.terms[insertIndex].parent = this;
+                    //this.terms[insertIndex].parentChildIndex = insertIndex;
+                }
+                this.reNumberChildren();
+                if(this.terms.length === 1 ){ 
+                    // If only one term remains, update its parent to be the current node's parent
+                    this.terms[0].parent = this.parent;
+                    // remove this node from parent
+                    if(this.parent.type === 'equation'){
+                        this.parent.terms[this.parentChildIndex] = this.terms[0];
+                    }else if(this.parent.type === this.terms[0].type){
+                        this.parent.terms.splice(this.parentChildIndex, 1, ...this.terms[0].terms.map((term) => {
+                            if(term.sign === undefined){
+                                let value = term;
+                                value.parent = this.parent;
+                                return {term:value}
+                            }else{
+                                let value = term.value;
+                                value.parent = this.parent;
+                                return {sign: term.sign, value: value};
+                            }
+                        }));
+                        this.parent.reNumberChildren()
+                    }else{
+                        this.parent.terms[this.parentChildIndex] = this.terms[0];
+                    }
+                    // remove this node from registry
+                    //NODE_REGISTRY.delete(this.id);
+                }
+                return this.toString();
+            } catch (error) {
+                alert('Error combining terms: ' + error.message);
+                this.terms = savedEquation; // revert to saved state
+                return this.toString();
+            }
+        }
+    }
+
+    reNumberChildren() {
+        this.terms.forEach((factor, idx) => {
+            factor.parentChildIndex = idx;
+        });
+    }
+
+    multiply(factor) {
+        if (typeof factor === 'number') {
+            factor = new valueElement(factor, '_numeric');
+        }
+        factor = this.normalizeFactor(factor);
+        if (factor instanceof multiplyGroup) {
+            return new multiplyGroup([...this.terms, ...factor.terms]);
+        }
+        return new multiplyGroup([...this.terms, factor]);
+    }
+
+    toString() {
+        if (this.terms.length === 0) {
+            throw new Error('multiplyGroup should not be empty');
+        }
+        return this.terms.map(factor => {
+            const termString = factor.toString();
+            if (factor.type === 'addGroup' || factor.type === 'multiplyGroup') {
+                return `(${termString})`;
+            }
+            return termString;
+        }).join('*');
+    }
+
+    toDraggable() {
+        if (this.terms.length === 0) {
+            throw new Error('multiplyGroup should not be empty');
+        }
+        let outString = '';
+        this.terms.forEach((factor, index) => {
+            outString += `<span class="dropZone" draggable="false" data-term="${this.id}:${index}"> , </span>`;
+            if (index > 0) {
+                outString += '*';
+            }
+            if(factor.type === "addGroup"){
+                outString += `<span class="term" draggable="true" data-term="${factor.id}">(${factor.toDraggable()})</span>`;
+            }else{
+                outString += `<span class="term" draggable="true" data-term="${factor.id}">${factor.toDraggable()}</span>`;    
+            }
+        });
+        outString += `<span class="dropZone" draggable="false" data-term="${this.id}:${this.terms.length}"> , </span>`;
+        return outString;
+    }
+
+    toJSON() {
+        return {type: "multiplyGroup", terms: this.terms.map(factor => factor.toJSON())};
+    }
 }
 
 class Equation extends ASTNode {
@@ -400,8 +550,8 @@ class Equation extends ASTNode {
 
         // read in the array of sides composed of their arrays of terms and make them into valueElements
         this.terms = [];
-        this.terms.push(new addGroup(terms[0], this, 0));
-        this.terms.push(new addGroup(terms[1], this, 1));
+        this.terms.push(createNodeFromJSON(terms[0], this, 0));
+        this.terms.push(createNodeFromJSON(terms[1], this, 1));
         if(terms.length < 3){
             this.equality = 0; // default to equality
         } else{
@@ -449,9 +599,8 @@ class Equation extends ASTNode {
 
     addBothSides(termInputValue,termInputUnit) {
         if(this.terms[0].type === 'valueElement' ){
-            const termLeft ={type:"valueElement", sign:"+", numericValue:termInputValue, var_unit:termInputUnit};
-            const newAddGroup = new addGroup({type:"addGroup", sign:"+", coefficient:1, terms:[
-                {type:"valueElement", sign:"+", numericValue:this.terms[0].numericValue, var_unit:this.terms[0].var_unit}, termLeft]}, this, 0);
+            const termLeft ={type:"valueElement", numericValue:termInputValue, var_unit:termInputUnit};
+            const newAddGroup = new addGroup({type:"addGroup", signs:["+", "+"], terms:[this.terms[0], termLeft]}, this, 0);
             this.terms[0] = newAddGroup;
         }else{
             const termLeft = {sign:'+', value: new valueElement(termInputValue,termInputUnit)};
@@ -459,7 +608,7 @@ class Equation extends ASTNode {
         }
         const termRight = {type:"valueElement", sign:"+", numericValue:termInputValue, var_unit:termInputUnit};
         if(this.terms[1].type === 'valueElement' ){
-            const newAddGroup = new addGroup({type:"addGroup", sign:"+", coefficient:1, terms:[this.terms[1], termRight]}, this, 1);
+            const newAddGroup = new addGroup({type:"addGroup", signs:["+"], terms:[this.terms[1], termRight]}, this, 1);
             this.terms[1] = newAddGroup;
         }else{
             const termRight = {sign:'+', value: new valueElement(termInputValue,termInputUnit)};
@@ -563,6 +712,34 @@ class Equation extends ASTNode {
         return equationNum === this.equationNumber;
     }
 
+}
+
+// Factory: create AST node from JSON produced by toJSON()
+function createNodeFromJSON(json, parent = null, parentChildIndex = null) {
+    // valueElement serialized as [numericValue, var_unit]
+    if (Array.isArray(json)) {
+        if (json.length === 2 && typeof json[1] === 'string') {
+            return new valueElement(json[0], json[1], parent, parentChildIndex);
+        }
+        throw new Error('Unrecognized array JSON node: ' + JSON.stringify(json));
+    }
+
+    if (json && typeof json === 'object') {
+        if (json.type === 'addGroup') {
+            // Build a descriptor object that matches addGroup constructor expectations
+            return new addGroup(json.terms, json.signs, parent, parentChildIndex);
+        }
+
+        if (json.type === 'multiplyGroup' ) {
+            return new multiplyGroup(json.terms, parent, parentChildIndex);
+        }
+        
+        if (json.type === 'valueElement') {
+            return new valueElement(json.numericValue, json.var_unit, parent, parentChildIndex);
+        }
+    }
+    
+    throw new Error('Cannot create AST node from JSON: ' + JSON.stringify(json));
 }
 
 // Export Equation class for use in script.js
