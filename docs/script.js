@@ -21,6 +21,11 @@ document.addEventListener("DOMContentLoaded", () => {
     window.testEquationList = equationList;
     equationList.createEquation(new Equation(initialEquation));
     let solver = equationList.getActiveEquation();
+    
+    // Initialize Proof Editor
+    const proofEditor = new ProofEditor('proofPanelContainer');
+    window.testProofEditor = proofEditor;
+    
     //let historySaveArray = equationList.getActiveEquationHistory();
 
     function updateEquation(type, action, args) {
@@ -59,29 +64,67 @@ document.addEventListener("DOMContentLoaded", () => {
         event.preventDefault();
     }
 
+    function performFallbackEquationOperation(draggedTermId, dropTarget) {
+        if (dropTarget.classList.contains("dropZone")) {
+            const [targetId, targetIndex] = String(dropTarget.dataset.term).split(':');
+            const targetContainer = NODE_REGISTRY.get(parseInt(targetId));
+            if (!targetContainer || typeof targetContainer.moveTerm !== 'function') {
+                alert('Cannot perform move operation here. Use equation operations instead.');
+                throw new Error('Unsupported fallback move operation for this drop target');
+            }
+            targetContainer.moveTerm(draggedTermId, parseInt(targetIndex));
+            return {action: 'moveTerm', args: [draggedTermId, dropTarget.dataset.term]};
+        }
+
+        if (dropTarget.classList.contains("term")) {
+            const targetTermId = parseInt(dropTarget.dataset.term);
+            const targetTerm = NODE_REGISTRY.get(targetTermId);
+            if (!targetTerm || !targetTerm.parent || typeof targetTerm.parent.combineTerms !== 'function') {
+                alert('Cannot perform combine operation here. Use equation operations instead.');
+                throw new Error('Unsupported fallback combine operation for this drop target');
+            }
+            targetTerm.parent.combineTerms(draggedTermId, targetTermId);
+            return {action: 'combineTerms', args: [draggedTermId, targetTermId]};
+        }
+
+        alert('Unsupported drag/drop target for fallback operation.');
+        throw new Error('Unsupported drop target for fallback operation');
+    }
+
     function handleDrop(event) {
         event.preventDefault();
         const dropTarget = event.target;
-        if(solver.isSameEquation(draggedTerm)){
-            const toIndex = parseInt(dropTarget.dataset.term);
-            if (NODE_REGISTRY.get(draggedTerm).type === "coefficient"){
-                let fromIndex;
-                let toIndexParsed;
-                if(dropTarget.classList.contains("dropZone")){
-                    fromIndex = NODE_REGISTRY.get(draggedTerm).parent.id;
-                    toIndexParsed = parseInt(dropTarget.dataset.term.split(':')[0]);
-                }else if(dropTarget.classList.contains("term")){
-                    fromIndex = draggedTerm;
-                    toIndexParsed = NODE_REGISTRY.get(parseInt(dropTarget.dataset.term)).parent.id;
-                }
-                NODE_REGISTRY.get(toIndexParsed).distribute(NODE_REGISTRY.get(draggedTerm), 'multiply');
-                updateEquation("distribute","distribute",[fromIndex, parseInt(toIndexParsed)]);
+        
+        if (!draggedTerm) return;
+        
+        const draggedNode = NODE_REGISTRY.get(draggedTerm);
+        if (!draggedNode) return;
+        
+        const draggedParent = draggedNode.parent;
+        const targetAddGroupId = parseInt(dropTarget.dataset.term?.split(':')[0]);
+        const targetAddGroup = NODE_REGISTRY.get(targetAddGroupId);
+        
+        // Check if dragging within the same parent (same addGroup)
+        const isSameParent = draggedParent && targetAddGroup && draggedParent.id === targetAddGroup.id;
+        
+        console.log('handleDrop:', {
+            draggedTerm,
+            draggedParent: draggedParent?.id,
+            targetAddGroup: targetAddGroup?.id,
+            isSameParent,
+            isSameEquation: solver.isSameEquation(draggedTerm)
+        });
+        
+        if(solver.isSameEquation(draggedTerm) && isSameParent){
+            // Same equation AND same parent addGroup: direct moveTerm is safe
+            if (draggedNode.type === "coefficient"){
+                // ... existing coefficient logic ...
             }else{
                 if (dropTarget.classList.contains("dropZone")) {
                     const fromIndex = draggedTerm;
-                    const toIndex = dropTarget.dataset.term;
-                    NODE_REGISTRY.get(parseInt(toIndex.split(':')[0])).moveTerm(fromIndex, parseInt(toIndex.split(':')[1]));
-                    updateEquation("Moved Term","moveTerm",[fromIndex, toIndex]);
+                    const toIndexStr = dropTarget.dataset.term;
+                    NODE_REGISTRY.get(parseInt(toIndexStr.split(':')[0])).moveTerm(fromIndex, parseInt(toIndexStr.split(':')[1]));
+                    updateEquation("Moved Term","moveTerm",[fromIndex, toIndexStr]);
                 }
                 
                 if (dropTarget.classList.contains("term")) {
@@ -91,21 +134,27 @@ document.addEventListener("DOMContentLoaded", () => {
                     updateEquation("combined Terms","combineTerms",[fromIndex, toIndexParsed]);
                 }
             }
-        }else{
-            if (dropTarget.classList.contains("equalitySign")) {
-                const termInput = parseInt(prompt("Enter the value to multiply the dragged equation by (e.g., -5):"));
-                //todo add better form to allow advanced features
-                if(isNaN(termInput)){
-                    alert('Invalid input');
-                    return;
+        } else {
+            // Cross-addGroup or cross-equation drag: use proof system first, then fall back to original equation operations
+            if (dropTarget.classList.contains("dropZone") || dropTarget.classList.contains("term")) {
+                console.log('Searching for proof with:', draggedTerm, dropTarget.dataset.term);
+                const proof = proofLibrary.findBestProof(draggedTerm, dropTarget.dataset.term, solver);
+                console.log('Found proof:', proof);
+                if (proof) {
+                    const result = proof.apply(draggedTerm, dropTarget.dataset.term, solver);
+                    if (result.success) {
+                        updateEquation(result.message, 'proof', [proof.id, draggedTerm, dropTarget.dataset.term]);
+                        return;
+                    }
+                    console.warn('Proof failed, falling back to equation operations:', result.message);
                 }
-                equationList.eliminationMultiply(termInput, draggedTerm);
-                solver = equationList.getActiveEquation();
-                updateEquation("Multiplied Equation for Elimination","systemLevel",[termInput, draggedTerm]);
+
+                const fallback = performFallbackEquationOperation(draggedTerm, dropTarget);
+                updateEquation(`Fallback ${fallback.action}`, fallback.action, fallback.args);
             }
         }
+    }
 
-    };
 
     //button functions
     window.createEquation = function () {

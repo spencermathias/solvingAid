@@ -102,3 +102,183 @@ body {
     background-color: #fff;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
+
+.main-container {
+    display: flex;
+    height: 100vh;
+    position: relative;
+}
+
+.toggle-proof-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 10px 16px;
+    background: #2196F3;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    z-index: 999;
+    font-size: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.toggle-proof-btn:hover {
+    background: #0b7dda;
+}
+
+.proof-panel-container {
+    position: fixed;
+    right: 0;
+    top: 0;
+    width: 350px;
+    height: 100vh;
+    background: #f9f9f9;
+    border-left: 2px solid #ccc;
+    overflow-y: auto;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    z-index: 998;
+    box-shadow: -2px 0 8px rgba(0,0,0,0.15);
+}
+
+.proof-panel-container.open {
+    transform: translateX(0);
+}
+
+.console-container {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.proof-panel {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.proof-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 10px;
+}
+
+.proof-header h2 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.btn-close-proof {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-close-proof:hover {
+    color: #000;
+    background: #e0e0e0;
+    border-radius: 4px;
+}
+
+.proof-list {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 10px;
+}
+
+.proof-empty {
+    text-align: center;
+    color: #999;
+    padding: 40px 10px;
+    font-size: 14px;
+}
+
+.proof-actions-footer {
+    padding-top: 10px;
+    border-top: 1px solid #ddd;
+}
+
+.btn-new-proof {
+    width: 100%;
+    padding: 10px 12px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.btn-new-proof:hover {
+    background: #45a049;
+}
+
+.proof-item {
+    padding: 12px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+}
+
+.proof-item-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.proof-toggle {
+    margin-right: 10px;
+    cursor: pointer;
+}
+
+.proof-name {
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.proof-description {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
+
+.proof-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-edit, .btn-delete {
+    padding: 4px 8px;
+    font-size: 11px;
+    border: 1px solid #ccc;
+    background: white;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.btn-edit:hover {
+    background: #e8f4f8;
+}
+
+.btn-delete {
+    color: #d32f2f;
+}
+
+.btn-delete:hover {
+    background: #ffebee;
+}
