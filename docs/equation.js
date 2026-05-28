@@ -550,8 +550,22 @@ class Equation extends ASTNode {
 
         // read in the array of sides composed of their arrays of terms and make them into valueElements
         this.terms = [];
-        this.terms.push(createNodeFromJSON(terms[0], this, 0));
-        this.terms.push(createNodeFromJSON(terms[1], this, 1));
+        if (terms[0] instanceof ASTNode) {
+            terms[0].parent = this;
+            terms[0].parentChildIndex = 0;
+            this.terms.push(terms[0]);
+        } else {
+            this.terms.push(createNodeFromJSON(terms[0], this, 0));
+        }
+
+        if (terms[1] instanceof ASTNode) {
+            terms[1].parent = this;
+            terms[1].parentChildIndex = 1;
+            this.terms.push(terms[1]);
+        } else {
+            this.terms.push(createNodeFromJSON(terms[1], this, 1));
+        }
+
         if(terms.length < 3){
             this.equality = 0; // default to equality
         } else{
@@ -716,6 +730,12 @@ class Equation extends ASTNode {
 
 // Factory: create AST node from JSON produced by toJSON()
 function createNodeFromJSON(json, parent = null, parentChildIndex = null) {
+    if (json instanceof ASTNode) {
+        json.parent = parent;
+        json.parentChildIndex = parentChildIndex;
+        return json;
+    }
+
     // valueElement serialized as [numericValue, var_unit]
     if (Array.isArray(json)) {
         if (json.length === 2 && typeof json[1] === 'string') {
